@@ -1,0 +1,79 @@
+<!-- Created: 2026-01-03 15:30 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문제 관리 - CBT 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>문제 관리</h1>
+            <nav>
+                <a href="{{ url_for('index') }}" class="btn btn-small">홈으로</a>
+            </nav>
+        </header>
+
+        <main class="admin-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="admin-actions">
+                <a href="{{ url_for('add_question') }}" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    새 문제 추가
+                </a>
+            </div>
+
+            <div class="question-list">
+                <h2>등록된 문제 목록 (총 {{ questions|length }}개)</h2>
+
+                {% if questions %}
+                    <table class="question-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th>문제</th>
+                                <th>정답</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for question in questions %}
+                            <tr>
+                                <td>{{ question.id }}</td>
+                                <td class="question-text">{{ question.question_text[:100] }}{% if question.question_text|length > 100 %}...{% endif %}</td>
+                                <td><span class="badge">{{ question.correct_answer }}</span></td>
+                                <td class="action-buttons">
+                                    <a href="{{ url_for('edit_question', question_id=question.id) }}" class="btn btn-small btn-edit">수정</a>
+                                    <form method="POST" action="{{ url_for('delete_question', question_id=question.id) }}" style="display: inline;" onsubmit="return confirm('정말 이 문제를 삭제하시겠습니까?');">
+                                        <button type="submit" class="btn btn-small btn-delete">삭제</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-state">
+                        <p>등록된 문제가 없습니다.</p>
+                        <p>새 문제 추가 버튼을 눌러 문제를 등록해주세요.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

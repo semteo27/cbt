@@ -1,0 +1,92 @@
+<!-- Created: 2026-01-03 15:30 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT 모의고사</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CBT 모의고사</h1>
+            <nav>
+                <a href="{{ url_for('index') }}" class="btn btn-small">홈으로</a>
+            </nav>
+        </header>
+
+        <main class="exam-content">
+            <div id="exam-section">
+                <div class="exam-header">
+                    <h2>문제 풀기</h2>
+                    <p>총 <strong>{{ questions|length }}문제</strong></p>
+                </div>
+
+                <form id="exam-form">
+                    {% for question in questions %}
+                    <div class="question-card">
+                        <div class="question-number">문제 {{ loop.index }}</div>
+                        <div class="question-text">{{ question.question_text }}</div>
+
+                        <div class="options">
+                            <label class="option">
+                                <input type="radio" name="question_{{ question.id }}" value="A" required>
+                                <span class="option-label">A</span>
+                                <span class="option-text">{{ question.option_a }}</span>
+                            </label>
+
+                            <label class="option">
+                                <input type="radio" name="question_{{ question.id }}" value="B">
+                                <span class="option-label">B</span>
+                                <span class="option-text">{{ question.option_b }}</span>
+                            </label>
+
+                            <label class="option">
+                                <input type="radio" name="question_{{ question.id }}" value="C">
+                                <span class="option-label">C</span>
+                                <span class="option-text">{{ question.option_c }}</span>
+                            </label>
+
+                            <label class="option">
+                                <input type="radio" name="question_{{ question.id }}" value="D">
+                                <span class="option-label">D</span>
+                                <span class="option-text">{{ question.option_d }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-large">답안 제출</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="result-section" style="display: none;">
+                <div class="result-header">
+                    <h2>시험 결과</h2>
+                    <div class="score-display">
+                        <div class="score-circle">
+                            <span id="score-percentage">0</span>
+                            <span class="percent-sign">점</span>
+                        </div>
+                        <div class="score-details">
+                            <p>맞은 문제: <strong id="correct-count">0</strong> / <strong id="total-count">0</strong></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="results-list"></div>
+
+                <div class="form-actions">
+                    <button onclick="location.reload()" class="btn btn-primary">다시 풀기</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">홈으로</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!-- Created: 2026-01-03 15:30 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT 모의고사 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CBT 모의고사 시스템</h1>
+        </header>
+
+        <main class="main-content">
+            <div class="info-box">
+                <h2>시스템 안내</h2>
+                <p>4지선다 형식의 컴퓨터 기반 시험(CBT) 시스템입니다.</p>
+                <p>현재 등록된 문제: <strong>{{ question_count }}개</strong></p>
+            </div>
+
+            <div class="menu-buttons">
+                <a href="{{ url_for('exam') }}" class="btn btn-primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                    </svg>
+                    시험 시작
+                </a>
+
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    문제 관리
+                </a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </main>
+
+        <footer>
+            <p>바이브코딩 CBT 시스템 &copy; 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

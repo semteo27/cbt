@@ -1,0 +1,84 @@
+<!-- Created: 2026-01-03 15:30 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문제 수정 - CBT 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>문제 수정</h1>
+            <nav>
+                <a href="{{ url_for('admin') }}" class="btn btn-small">문제 관리</a>
+                <a href="{{ url_for('index') }}" class="btn btn-small">홈으로</a>
+            </nav>
+        </header>
+
+        <main class="form-content">
+            <form method="POST" enctype="multipart/form-data" class="question-form">
+                <div class="form-group">
+                    <label for="question_text">문제 *</label>
+                    <textarea id="question_text" name="question_text" rows="4" required>{{ question.question_text }}</textarea>
+                </div>
+
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label for="option_a">보기 A *</label>
+                        <input type="text" id="option_a" name="option_a" required value="{{ question.option_a }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="option_b">보기 B *</label>
+                        <input type="text" id="option_b" name="option_b" required value="{{ question.option_b }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="option_c">보기 C *</label>
+                        <input type="text" id="option_c" name="option_c" required value="{{ question.option_c }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="option_d">보기 D *</label>
+                        <input type="text" id="option_d" name="option_d" required value="{{ question.option_d }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="correct_answer">정답 *</label>
+                    <select id="correct_answer" name="correct_answer" required>
+                        <option value="A" {% if question.correct_answer == 'A' %}selected{% endif %}>A</option>
+                        <option value="B" {% if question.correct_answer == 'B' %}selected{% endif %}>B</option>
+                        <option value="C" {% if question.correct_answer == 'C' %}selected{% endif %}>C</option>
+                        <option value="D" {% if question.correct_answer == 'D' %}selected{% endif %}>D</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="explanation">해설</label>
+                    <textarea id="explanation" name="explanation" rows="4">{{ question.explanation }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="explanation_image">해설 이미지</label>
+                    {% if question.explanation_image %}
+                        <div class="current-image">
+                            <p>현재 이미지:</p>
+                            <img src="{{ url_for('static', filename=question.explanation_image) }}" alt="현재 해설 이미지" style="max-width: 300px;">
+                        </div>
+                    {% endif %}
+                    <input type="file" id="explanation_image" name="explanation_image" accept="image/*">
+                    <small>새 이미지를 업로드하면 기존 이미지가 교체됩니다. (PNG, JPG, JPEG, GIF, 최대 16MB)</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">수정 완료</button>
+                    <a href="{{ url_for('admin') }}" class="btn btn-secondary">취소</a>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

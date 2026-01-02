@@ -1,0 +1,79 @@
+<!-- Created: 2026-01-03 15:30 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문제 추가 - CBT 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>새 문제 추가</h1>
+            <nav>
+                <a href="{{ url_for('admin') }}" class="btn btn-small">문제 관리</a>
+                <a href="{{ url_for('index') }}" class="btn btn-small">홈으로</a>
+            </nav>
+        </header>
+
+        <main class="form-content">
+            <form method="POST" enctype="multipart/form-data" class="question-form">
+                <div class="form-group">
+                    <label for="question_text">문제 *</label>
+                    <textarea id="question_text" name="question_text" rows="4" required placeholder="문제를 입력하세요"></textarea>
+                </div>
+
+                <div class="options-grid">
+                    <div class="form-group">
+                        <label for="option_a">보기 A *</label>
+                        <input type="text" id="option_a" name="option_a" required placeholder="첫 번째 보기">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="option_b">보기 B *</label>
+                        <input type="text" id="option_b" name="option_b" required placeholder="두 번째 보기">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="option_c">보기 C *</label>
+                        <input type="text" id="option_c" name="option_c" required placeholder="세 번째 보기">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="option_d">보기 D *</label>
+                        <input type="text" id="option_d" name="option_d" required placeholder="네 번째 보기">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="correct_answer">정답 *</label>
+                    <select id="correct_answer" name="correct_answer" required>
+                        <option value="">정답 선택</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="explanation">해설</label>
+                    <textarea id="explanation" name="explanation" rows="4" placeholder="문제 해설을 입력하세요 (선택사항)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="explanation_image">해설 이미지</label>
+                    <input type="file" id="explanation_image" name="explanation_image" accept="image/*">
+                    <small>PNG, JPG, JPEG, GIF 형식, 최대 16MB</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">문제 추가</button>
+                    <a href="{{ url_for('admin') }}" class="btn btn-secondary">취소</a>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
