@@ -12,7 +12,13 @@
         <header>
             <h1>문제 관리</h1>
             <nav>
-                <a href="{{ url_for('index') }}" class="btn btn-small">홈으로</a>
+                <a href="{{ url_for('index') }}" class="btn btn-small btn-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    뒤로가기
+                </a>
             </nav>
         </header>
 
@@ -41,37 +47,55 @@
                 <h2>등록된 문제 목록 (총 {{ questions|length }}개)</h2>
 
                 {% if questions %}
-                    <table class="question-table">
-                        <thead>
-                            <tr>
-                                <th>번호</th>
-                                <th>문제</th>
-                                <th>정답</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for question in questions %}
-                            <tr>
-                                <td>{{ question.id }}</td>
-                                <td class="question-text">{{ question.question_text[:100] }}{% if question.question_text|length > 100 %}...{% endif %}</td>
-                                <td><span class="badge">{{ question.correct_answer }}</span></td>
-                                <td class="action-buttons">
-                                    <a href="{{ url_for('edit_question', question_id=question.id) }}" class="btn btn-small btn-edit">수정</a>
-                                    <form method="POST" action="{{ url_for('delete_question', question_id=question.id) }}" style="display: inline;" onsubmit="return confirm('정말 이 문제를 삭제하시겠습니까?');">
-                                        <button type="submit" class="btn btn-small btn-delete">삭제</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    {% for exam_set in exam_sets %}
+                    <div class="exam-set-group">
+                        <h3 class="exam-set-title">
+                            <span class="set-number">모의고사 {{ exam_set }}회</span>
+                            <span class="set-count">({{ questions_by_set[exam_set]|length }}문제)</span>
+                        </h3>
+                        <table class="question-table">
+                            <thead>
+                                <tr>
+                                    <th>번호</th>
+                                    <th>문제</th>
+                                    <th>정답</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for question in questions_by_set[exam_set] %}
+                                <tr>
+                                    <td>{{ question.id }}</td>
+                                    <td class="question-text">{{ question.question_text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ')[:100] }}{% if question.question_text|length > 100 %}...{% endif %}</td>
+                                    <td><span class="badge">{{ question.correct_answer }}</span></td>
+                                    <td class="action-buttons">
+                                        <a href="{{ url_for('edit_question', question_id=question.id) }}" class="btn btn-small btn-edit">수정</a>
+                                        <form method="POST" action="{{ url_for('delete_question', question_id=question.id) }}" style="display: inline;" onsubmit="return confirm('정말 이 문제를 삭제하시겠습니까?');">
+                                            <button type="submit" class="btn btn-small btn-delete">삭제</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
                 {% else %}
                     <div class="empty-state">
                         <p>등록된 문제가 없습니다.</p>
                         <p>새 문제 추가 버튼을 눌러 문제를 등록해주세요.</p>
                     </div>
                 {% endif %}
+            </div>
+
+            <div class="bottom-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    처음 화면으로
+                </a>
             </div>
         </main>
     </div>

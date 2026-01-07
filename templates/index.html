@@ -20,15 +20,34 @@
                 <p>현재 등록된 문제: <strong>{{ question_count }}개</strong></p>
             </div>
 
-            <div class="menu-buttons">
-                <a href="{{ url_for('exam') }}" class="btn btn-primary">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 11l3 3L22 4"></path>
-                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
-                    </svg>
-                    시험 시작
-                </a>
+            {% if exam_set_info %}
+            <div class="exam-set-section">
+                <h2>모의고사 회차 선택</h2>
+                <p class="exam-set-description">원하시는 회차를 선택하여 시험을 시작하세요.</p>
+                <div class="exam-set-grid">
+                    {% for exam_info in exam_set_info %}
+                    <a href="{{ url_for('exam', exam_set=exam_info.set_number) }}" class="exam-set-card">
+                        <div class="exam-set-number">{{ exam_info.set_number }}회</div>
+                        <div class="exam-set-count">{{ exam_info.count }}문제</div>
+                        <div class="exam-set-action">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                            </svg>
+                            시험 시작
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>등록된 문제가 없습니다.</p>
+                <p>관리자 페이지에서 문제를 추가해주세요.</p>
+            </div>
+            {% endif %}
 
+            <div class="menu-buttons">
                 <a href="{{ url_for('admin') }}" class="btn btn-secondary">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>

@@ -4,80 +4,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT 모의고사</title>
+    <title>{{ exam_title if exam_title else 'CBT 모의고사' }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>CBT 모의고사</h1>
+            <h1>{{ exam_title if exam_title else 'CBT 모의고사' }}</h1>
             <nav>
                 <a href="{{ url_for('index') }}" class="btn btn-small">홈으로</a>
             </nav>
         </header>
 
         <main class="exam-content">
-            <div id="exam-section">
-                <div class="exam-header">
-                    <h2>문제 풀기</h2>
-                    <p>총 <strong>{{ questions|length }}문제</strong></p>
+            <!-- 진행 상황 표시 -->
+            <div class="progress-section">
+                <div class="progress-info">
+                    <span id="current-question-num">1</span> / {{ questions|length }}
                 </div>
-
-                <form id="exam-form">
-                    {% for question in questions %}
-                    <div class="question-card">
-                        <div class="question-number">문제 {{ loop.index }}</div>
-                        <div class="question-text">{{ question.question_text }}</div>
-
-                        <div class="options">
-                            <label class="option">
-                                <input type="radio" name="question_{{ question.id }}" value="A" required>
-                                <span class="option-label">A</span>
-                                <span class="option-text">{{ question.option_a }}</span>
-                            </label>
-
-                            <label class="option">
-                                <input type="radio" name="question_{{ question.id }}" value="B">
-                                <span class="option-label">B</span>
-                                <span class="option-text">{{ question.option_b }}</span>
-                            </label>
-
-                            <label class="option">
-                                <input type="radio" name="question_{{ question.id }}" value="C">
-                                <span class="option-label">C</span>
-                                <span class="option-text">{{ question.option_c }}</span>
-                            </label>
-
-                            <label class="option">
-                                <input type="radio" name="question_{{ question.id }}" value="D">
-                                <span class="option-label">D</span>
-                                <span class="option-text">{{ question.option_d }}</span>
-                            </label>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary btn-large">답안 제출</button>
-                    </div>
-                </form>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
             </div>
 
-            <div id="result-section" style="display: none;">
+            <!-- 문제 번호 네비게이션 -->
+            <div class="question-navigation">
+                <h3>문제 선택</h3>
+                <div class="question-numbers" id="question-numbers">
+                    {% for question in questions %}
+                    <button type="button" class="question-num-btn" id="nav-btn-{{ loop.index }}" onclick="goToQuestion({{ loop.index }})" {% if loop.index == 1 %}data-current="true"{% endif %}>
+                        {{ loop.index }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 문제 풀이 섹션 -->
+            <div id="question-section">
+                {% for question in questions %}
+                <div class="question-container" id="question-{{ loop.index }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %}">
+                    <div class="question-card">
+                        <div class="question-number">문제 {{ loop.index }}</div>
+                        <div class="question-text">{{ question.question_text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ') }}</div>
+                        {% if question.question_image %}
+                        <div class="question-image-container">
+                            <img src="{{ url_for('static', filename=question.question_image) }}" alt="문제 이미지" class="question-image">
+                        </div>
+                        {% endif %}
+
+                        <div class="options" id="options-{{ loop.index }}">
+                            <label class="option" data-value="A">
+                                <input type="radio" name="question_{{ loop.index }}" value="A">
+                                <span class="option-label">A</span>
+                                <div class="option-content">
+                                    <span class="option-text">{{ question.option_a.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ') }}</span>
+                                    {% if question.option_a_image %}
+                                    <img src="{{ url_for('static', filename=question.option_a_image) }}" alt="보기 A 이미지" class="option-image">
+                                    {% endif %}
+                                </div>
+                            </label>
+
+                            <label class="option" data-value="B">
+                                <input type="radio" name="question_{{ loop.index }}" value="B">
+                                <span class="option-label">B</span>
+                                <div class="option-content">
+                                    <span class="option-text">{{ question.option_b.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ') }}</span>
+                                    {% if question.option_b_image %}
+                                    <img src="{{ url_for('static', filename=question.option_b_image) }}" alt="보기 B 이미지" class="option-image">
+                                    {% endif %}
+                                </div>
+                            </label>
+
+                            <label class="option" data-value="C">
+                                <input type="radio" name="question_{{ loop.index }}" value="C">
+                                <span class="option-label">C</span>
+                                <div class="option-content">
+                                    <span class="option-text">{{ question.option_c.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ') }}</span>
+                                    {% if question.option_c_image %}
+                                    <img src="{{ url_for('static', filename=question.option_c_image) }}" alt="보기 C 이미지" class="option-image">
+                                    {% endif %}
+                                </div>
+                            </label>
+
+                            <label class="option" data-value="D">
+                                <input type="radio" name="question_{{ loop.index }}" value="D">
+                                <span class="option-label">D</span>
+                                <div class="option-content">
+                                    <span class="option-text">{{ question.option_d.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ') }}</span>
+                                    {% if question.option_d_image %}
+                                    <img src="{{ url_for('static', filename=question.option_d_image) }}" alt="보기 D 이미지" class="option-image">
+                                    {% endif %}
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- 정답 확인 섹션 -->
+                        <div class="answer-result" id="result-{{ loop.index }}" style="display: none;">
+                            <div class="result-badge" id="badge-{{ loop.index }}"></div>
+                            <div class="answer-info">
+                                <p><strong>정답:</strong> <span id="correct-answer-{{ loop.index }}">{{ question.correct_answer }}</span></p>
+                                <p><strong>내 답:</strong> <span id="user-answer-{{ loop.index }}"></span></p>
+                            </div>
+                            {% if question.explanation %}
+                            <div class="explanation-box">
+                                <h4>해설</h4>
+                                <div class="explanation-text">{{ question.explanation|safe }}</div>
+                                {% if question.explanation_images %}
+                                    {% set images = question.explanation_images.split('|') %}
+                                    {% for img in images %}
+                                        {% if img %}
+                                        <img src="{{ url_for('static', filename=img) }}" alt="해설 이미지 {{ loop.index }}" class="explanation-image">
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elif question.explanation_image %}
+                                    <img src="{{ url_for('static', filename=question.explanation_image) }}" alt="해설 이미지" class="explanation-image">
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 네비게이션 버튼 영역 -->
+                        <div class="navigation-buttons">
+                            <button type="button" class="btn btn-nav btn-first" onclick="firstQuestion()" {% if loop.index == 1 %}disabled{% endif %}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="11 17 6 12 11 7"></polyline>
+                                    <polyline points="18 17 13 12 18 7"></polyline>
+                                </svg>
+                                처음
+                            </button>
+
+                            <button type="button" class="btn btn-nav btn-prev" onclick="previousQuestion()" {% if loop.index == 1 %}disabled{% endif %}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                이전
+                            </button>
+
+                            <button type="button" class="btn btn-primary btn-submit" id="submit-{{ loop.index }}" onclick="submitAnswer({{ loop.index }}, '{{ question.correct_answer }}')" style="display: inline-flex;">
+                                답안 제출
+                            </button>
+
+                            <button type="button" class="btn btn-nav btn-next" onclick="nextQuestion()" {% if loop.index == questions|length %}disabled{% endif %}>
+                                다음
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+
+                            <button type="button" class="btn btn-nav btn-last" onclick="lastQuestion()" {% if loop.index == questions|length %}disabled{% endif %}>
+                                마지막
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="13 17 18 12 13 7"></polyline>
+                                    <polyline points="6 17 11 12 6 7"></polyline>
+                                </svg>
+                            </button>
+
+                            <a href="{{ url_for('index') }}" class="btn btn-nav btn-home">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                                홈
+                            </a>
+                        </div>
+
+                        <!-- 최종 제출 버튼 (마지막 문제 풀었을 때만 표시) -->
+                        <div class="final-submit" id="final-submit-{{ loop.index }}" style="display: none;">
+                            <button type="button" class="btn btn-primary btn-large" onclick="showFinalResult()">
+                                시험 완료 - 결과 보기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 숨겨진 데이터 저장 -->
+                <input type="hidden" id="question-id-{{ loop.index }}" value="{{ question.id }}">
+                {% endfor %}
+            </div>
+
+            <!-- 최종 결과 섹션 -->
+            <div id="final-result-section" style="display: none;">
                 <div class="result-header">
-                    <h2>시험 결과</h2>
+                    <h2>시험 완료!</h2>
                     <div class="score-display">
                         <div class="score-circle">
-                            <span id="score-percentage">0</span>
+                            <span id="final-score">0</span>
                             <span class="percent-sign">점</span>
                         </div>
                         <div class="score-details">
-                            <p>맞은 문제: <strong id="correct-count">0</strong> / <strong id="total-count">0</strong></p>
+                            <p>맞은 문제: <strong id="final-correct">0</strong> / <strong id="final-total">{{ questions|length }}</strong></p>
+                            <p>정답률: <strong id="final-percentage">0%</strong></p>
                         </div>
                     </div>
                 </div>
 
-                <div id="results-list"></div>
+                <div class="result-summary">
+                    <h3>문제별 결과</h3>
+                    <div id="summary-list"></div>
+                </div>
 
                 <div class="form-actions">
                     <button onclick="location.reload()" class="btn btn-primary">다시 풀기</button>
@@ -87,6 +211,259 @@
         </main>
     </div>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        const totalQuestions = {{ questions|length }};
+        let currentQuestion = 1;
+        let correctCount = 0;
+        let answeredQuestions = new Set(); // 풀었던 문제 번호 저장
+        let questionResults = {}; // 각 문제의 결과 저장
+
+        // 문제로 이동
+        function goToQuestion(questionNum) {
+            // 현재 문제 숨기기
+            document.getElementById(`question-${currentQuestion}`).style.display = 'none';
+
+            // 네비게이션 버튼 업데이트
+            document.getElementById(`nav-btn-${currentQuestion}`).removeAttribute('data-current');
+
+            // 새 문제 표시
+            currentQuestion = questionNum;
+            document.getElementById(`question-${currentQuestion}`).style.display = 'block';
+            document.getElementById(`nav-btn-${currentQuestion}`).setAttribute('data-current', 'true');
+
+            // 진행 상황 업데이트
+            updateProgress();
+            updateNavigationButtons();
+        }
+
+        // 첫 번째 문제로 이동
+        function firstQuestion() {
+            if (currentQuestion > 1) {
+                goToQuestion(1);
+            }
+        }
+
+        // 이전 문제로 이동
+        function previousQuestion() {
+            if (currentQuestion > 1) {
+                goToQuestion(currentQuestion - 1);
+            }
+        }
+
+        // 다음 문제로 이동
+        function nextQuestion() {
+            if (currentQuestion < totalQuestions) {
+                goToQuestion(currentQuestion + 1);
+            }
+        }
+
+        // 마지막 문제로 이동
+        function lastQuestion() {
+            if (currentQuestion < totalQuestions) {
+                goToQuestion(totalQuestions);
+            }
+        }
+
+        // 네비게이션 버튼 상태 업데이트
+        function updateNavigationButtons() {
+            const firstButtons = document.querySelectorAll('.btn-first');
+            const prevButtons = document.querySelectorAll('.btn-prev');
+            const nextButtons = document.querySelectorAll('.btn-next');
+            const lastButtons = document.querySelectorAll('.btn-last');
+
+            firstButtons.forEach(btn => {
+                btn.disabled = currentQuestion === 1;
+            });
+
+            prevButtons.forEach(btn => {
+                btn.disabled = currentQuestion === 1;
+            });
+
+            nextButtons.forEach(btn => {
+                btn.disabled = currentQuestion === totalQuestions;
+            });
+
+            lastButtons.forEach(btn => {
+                btn.disabled = currentQuestion === totalQuestions;
+            });
+        }
+
+        // 답안 제출
+        function submitAnswer(questionNum, correctAnswer) {
+            const selectedRadio = document.querySelector(`input[name="question_${questionNum}"]:checked`);
+
+            if (!selectedRadio) {
+                alert('답을 선택해주세요!');
+                return;
+            }
+
+            const userAnswer = selectedRadio.value;
+            const isCorrect = userAnswer === correctAnswer;
+
+            // 이미 풀었던 문제인지 확인
+            if (answeredQuestions.has(questionNum)) {
+                // 기존 결과 업데이트
+                const oldResult = questionResults[questionNum];
+                if (oldResult.isCorrect) {
+                    correctCount--; // 기존 정답이었으면 점수 차감
+                }
+            }
+
+            if (isCorrect) {
+                correctCount++;
+            }
+
+            // 풀었던 문제로 표시
+            answeredQuestions.add(questionNum);
+            questionResults[questionNum] = {
+                userAnswer: userAnswer,
+                correctAnswer: correctAnswer,
+                isCorrect: isCorrect
+            };
+
+            // 정답 표시
+            displayResult(questionNum, userAnswer, correctAnswer, isCorrect);
+
+            // 버튼 처리
+            document.getElementById(`submit-${questionNum}`).style.display = 'none';
+
+            // 옵션 비활성화
+            const options = document.querySelectorAll(`input[name="question_${questionNum}"]`);
+            options.forEach(opt => opt.disabled = true);
+
+            // 정답/오답 표시
+            highlightAnswer(questionNum, userAnswer, correctAnswer);
+
+            // 문제 번호 버튼 스타일 업데이트
+            updateQuestionNumberButton(questionNum, isCorrect);
+
+            // 모든 문제를 풀었는지 확인
+            checkAllAnswered();
+        }
+
+        // 문제 번호 버튼 스타일 업데이트
+        function updateQuestionNumberButton(questionNum, isCorrect) {
+            const btn = document.getElementById(`nav-btn-${questionNum}`);
+            btn.classList.remove('answered-correct', 'answered-incorrect');
+            if (isCorrect) {
+                btn.classList.add('answered-correct');
+            } else {
+                btn.classList.add('answered-incorrect');
+            }
+        }
+
+        // 모든 문제를 풀었는지 확인
+        function checkAllAnswered() {
+            if (answeredQuestions.size === totalQuestions) {
+                // 모든 문제를 풀었으면 최종 제출 버튼 표시
+                for (let i = 1; i <= totalQuestions; i++) {
+                    const finalBtn = document.getElementById(`final-submit-${i}`);
+                    if (finalBtn) {
+                        finalBtn.style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        // 정답 결과 표시
+        function displayResult(questionNum, userAnswer, correctAnswer, isCorrect) {
+            const resultDiv = document.getElementById(`result-${questionNum}`);
+            const badgeDiv = document.getElementById(`badge-${questionNum}`);
+
+            resultDiv.style.display = 'block';
+
+            if (isCorrect) {
+                badgeDiv.className = 'result-badge correct';
+                badgeDiv.innerHTML = '✓ 정답입니다!';
+            } else {
+                badgeDiv.className = 'result-badge incorrect';
+                badgeDiv.innerHTML = '✗ 오답입니다';
+            }
+
+            document.getElementById(`user-answer-${questionNum}`).textContent = userAnswer;
+        }
+
+        // 정답/오답 하이라이트
+        function highlightAnswer(questionNum, userAnswer, correctAnswer) {
+            const optionsDiv = document.getElementById(`options-${questionNum}`);
+            const labels = optionsDiv.querySelectorAll('.option');
+
+            labels.forEach(label => {
+                const value = label.getAttribute('data-value');
+                label.classList.remove('correct-option', 'wrong-option');
+
+                if (value === correctAnswer) {
+                    label.classList.add('correct-option');
+                } else if (value === userAnswer && userAnswer !== correctAnswer) {
+                    label.classList.add('wrong-option');
+                }
+            });
+        }
+
+        // 진행 상황 업데이트
+        function updateProgress() {
+            document.getElementById('current-question-num').textContent = currentQuestion;
+            const progress = (answeredQuestions.size / totalQuestions) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        // 최종 결과 표시
+        function showFinalResult() {
+            if (answeredQuestions.size < totalQuestions) {
+                const unanswered = totalQuestions - answeredQuestions.size;
+                if (!confirm(`아직 ${unanswered}개 문제를 풀지 않았습니다.\n결과를 확인하시겠습니까?`)) {
+                    return;
+                }
+            }
+
+            document.getElementById('question-section').style.display = 'none';
+            document.getElementById('final-result-section').style.display = 'block';
+            document.querySelector('.progress-section').style.display = 'none';
+            document.querySelector('.question-navigation').style.display = 'none';
+
+            const score = answeredQuestions.size > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+            const percentage = answeredQuestions.size > 0 ? ((correctCount / totalQuestions) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-correct').textContent = correctCount;
+            document.getElementById('final-percentage').textContent = percentage + '%';
+
+            // 문제별 결과 요약
+            const summaryList = document.getElementById('summary-list');
+            let summaryHTML = '';
+
+            for (let i = 1; i <= totalQuestions; i++) {
+                const result = questionResults[i];
+                if (result) {
+                    const statusClass = result.isCorrect ? 'summary-correct' : 'summary-incorrect';
+                    const statusIcon = result.isCorrect ? '✓' : '✗';
+
+                    summaryHTML += `
+                        <div class="summary-item ${statusClass}">
+                            <span class="summary-icon">${statusIcon}</span>
+                            <span class="summary-question">문제 ${i}</span>
+                            <span class="summary-answer">내 답: ${result.userAnswer} / 정답: ${result.correctAnswer}</span>
+                        </div>
+                    `;
+                } else {
+                    summaryHTML += `
+                        <div class="summary-item summary-unanswered">
+                            <span class="summary-icon">-</span>
+                            <span class="summary-question">문제 ${i}</span>
+                            <span class="summary-answer">미응답</span>
+                        </div>
+                    `;
+                }
+            }
+
+            summaryList.innerHTML = summaryHTML;
+        }
+
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            updateProgress();
+            updateNavigationButtons();
+        };
+    </script>
 </body>
 </html>

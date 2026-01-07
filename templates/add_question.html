@@ -24,25 +24,39 @@
                     <textarea id="question_text" name="question_text" rows="4" required placeholder="문제를 입력하세요"></textarea>
                 </div>
 
-                <div class="options-grid">
+                <div class="form-group">
+                    <label for="question_image">문제 이미지</label>
+                    <input type="file" id="question_image" name="question_image" accept="image/*">
+                    <small>문제에 이미지를 추가할 수 있습니다 (선택사항, PNG, JPG, JPEG, GIF, 최대 16MB)</small>
+                </div>
+
+                <div class="option-section">
                     <div class="form-group">
                         <label for="option_a">보기 A *</label>
                         <input type="text" id="option_a" name="option_a" required placeholder="첫 번째 보기">
+                        <label for="option_a_image" class="image-label">보기 A 이미지</label>
+                        <input type="file" id="option_a_image" name="option_a_image" accept="image/*">
                     </div>
 
                     <div class="form-group">
                         <label for="option_b">보기 B *</label>
                         <input type="text" id="option_b" name="option_b" required placeholder="두 번째 보기">
+                        <label for="option_b_image" class="image-label">보기 B 이미지</label>
+                        <input type="file" id="option_b_image" name="option_b_image" accept="image/*">
                     </div>
 
                     <div class="form-group">
                         <label for="option_c">보기 C *</label>
                         <input type="text" id="option_c" name="option_c" required placeholder="세 번째 보기">
+                        <label for="option_c_image" class="image-label">보기 C 이미지</label>
+                        <input type="file" id="option_c_image" name="option_c_image" accept="image/*">
                     </div>
 
                     <div class="form-group">
                         <label for="option_d">보기 D *</label>
                         <input type="text" id="option_d" name="option_d" required placeholder="네 번째 보기">
+                        <label for="option_d_image" class="image-label">보기 D 이미지</label>
+                        <input type="file" id="option_d_image" name="option_d_image" accept="image/*">
                     </div>
                 </div>
 
@@ -58,14 +72,41 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="exam_set">모의고사 회차 *</label>
+                    <select id="exam_set" name="exam_set" required>
+                        <option value="1">1회</option>
+                        <option value="2">2회</option>
+                        <option value="3">3회</option>
+                        <option value="4">4회</option>
+                        <option value="5">5회</option>
+                        <option value="6">6회</option>
+                        <option value="7">7회</option>
+                        <option value="8">8회</option>
+                        <option value="9">9회</option>
+                        <option value="10">10회</option>
+                        <option value="11">11회</option>
+                        <option value="12">12회</option>
+                        <option value="13">13회</option>
+                        <option value="14">14회</option>
+                        <option value="15">15회</option>
+                        <option value="16">16회</option>
+                        <option value="17">17회</option>
+                        <option value="18">18회</option>
+                        <option value="19">19회</option>
+                        <option value="20">20회</option>
+                    </select>
+                    <small>이 문제가 속할 모의고사 회차를 선택하세요 (각 회차당 20문제 권장)</small>
+                </div>
+
+                <div class="form-group">
                     <label for="explanation">해설</label>
                     <textarea id="explanation" name="explanation" rows="4" placeholder="문제 해설을 입력하세요 (선택사항)"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="explanation_image">해설 이미지</label>
-                    <input type="file" id="explanation_image" name="explanation_image" accept="image/*">
-                    <small>PNG, JPG, JPEG, GIF 형식, 최대 16MB</small>
+                    <label for="explanation_images">해설 이미지 (최대 5개)</label>
+                    <input type="file" id="explanation_images" name="explanation_images" accept="image/*" multiple>
+                    <small>최대 5개의 이미지를 선택할 수 있습니다 (PNG, JPG, JPEG, GIF 형식, 각 최대 16MB)</small>
                 </div>
 
                 <div class="form-actions">
@@ -75,5 +116,16 @@
             </form>
         </main>
     </div>
+
+    <script>
+        // 해설 이미지 파일 개수 제한 (최대 5개)
+        document.getElementById('explanation_images').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 5) {
+                alert('해설 이미지는 최대 5개까지만 선택할 수 있습니다.');
+                e.target.value = ''; // 선택 취소
+            }
+        });
+    </script>
 </body>
 </html>
