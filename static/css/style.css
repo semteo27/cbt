@@ -141,6 +141,29 @@ main {
     margin-top: 30px;
 }
 
+/* 과목 섹션 */
+.subject-section {
+    margin: 40px 0;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border-left: 5px solid #667eea;
+}
+
+.subject-section h2 {
+    color: #667eea;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1.8em;
+}
+
+.subject-description {
+    text-align: center;
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 1.05em;
+}
+
 /* 회차 선택 섹션 */
 .exam-set-section {
     margin: 30px 0;

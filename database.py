@@ -9,6 +9,16 @@ def init_db():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
+    # 과목 테이블 생성
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS subjects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # 문제 테이블 생성
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS questions (
@@ -26,7 +36,9 @@ def init_db():
             correct_answer TEXT NOT NULL,
             explanation TEXT,
             explanation_image TEXT,
-            exam_set INTEGER DEFAULT 1
+            exam_set INTEGER DEFAULT 1,
+            subject_id INTEGER,
+            FOREIGN KEY (subject_id) REFERENCES subjects(id)
         )
     ''')
 
@@ -111,6 +123,28 @@ def migrate_add_explanation_images():
             print("explanation_images 컬럼이 이미 존재합니다.")
     except Exception as e:
         print(f"해설 이미지 마이그레이션 오류: {e}")
+    finally:
+        conn.close()
+
+def migrate_add_subject_id():
+    """기존 테이블에 subject_id 컬럼 추가 (마이그레이션)"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # 현재 컬럼 목록 확인
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        # subject_id 컬럼이 없으면 추가
+        if 'subject_id' not in columns:
+            cursor.execute('ALTER TABLE questions ADD COLUMN subject_id INTEGER')
+            conn.commit()
+            print("subject_id 컬럼이 추가되었습니다.")
+        else:
+            print("subject_id 컬럼이 이미 존재합니다.")
+    except Exception as e:
+        print(f"subject_id 마이그레이션 오류: {e}")
     finally:
         conn.close()
 
@@ -268,10 +302,128 @@ def get_question_count_by_exam_set(exam_set):
     conn.close()
     return count
 
+# ============== 과목 관련 함수 ==============
+
+def add_subject(name, description=''):
+    """새 과목 추가"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('INSERT INTO subjects (name, description) VALUES (?, ?)', (name, description))
+        conn.commit()
+        subject_id = cursor.lastrowid
+        conn.close()
+        return subject_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None  # 중복된 과목명
+
+def get_all_subjects():
+    """모든 과목 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM subjects ORDER BY id')
+    subjects = cursor.fetchall()
+
+    conn.close()
+    return subjects
+
+def get_subject_by_id(subject_id):
+    """ID로 특정 과목 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM subjects WHERE id = ?', (subject_id,))
+    subject = cursor.fetchone()
+
+    conn.close()
+    return subject
+
+def get_subject_by_name(name):
+    """이름으로 과목 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM subjects WHERE name = ?', (name,))
+    subject = cursor.fetchone()
+
+    conn.close()
+    return subject
+
+def update_subject(subject_id, name, description=''):
+    """과목 수정"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('UPDATE subjects SET name = ?, description = ? WHERE id = ?',
+                  (name, description, subject_id))
+    conn.commit()
+    conn.close()
+
+def delete_subject(subject_id):
+    """과목 삭제"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('DELETE FROM subjects WHERE id = ?', (subject_id,))
+    conn.commit()
+    conn.close()
+
+def get_exam_sets_by_subject(subject_id):
+    """특정 과목의 모든 회차 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT DISTINCT exam_set FROM questions WHERE subject_id = ? ORDER BY exam_set',
+                  (subject_id,))
+    exam_sets = [row[0] for row in cursor.fetchall()]
+
+    conn.close()
+    return exam_sets
+
+def get_questions_by_subject_and_exam_set(subject_id, exam_set):
+    """특정 과목의 특정 회차 문제들 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM questions WHERE subject_id = ? AND exam_set = ? ORDER BY id',
+                  (subject_id, exam_set))
+    questions = cursor.fetchall()
+
+    conn.close()
+    return questions
+
+def update_question_subject(question_id, subject_id):
+    """문제의 과목 변경"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('UPDATE questions SET subject_id = ? WHERE id = ?', (subject_id, question_id))
+    conn.commit()
+    conn.close()
+
+def update_all_questions_subject(subject_id):
+    """모든 문제를 특정 과목으로 할당"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('UPDATE questions SET subject_id = ?', (subject_id,))
+    conn.commit()
+    affected_rows = cursor.rowcount
+    conn.close()
+    return affected_rows
+
 if __name__ == '__main__':
     # 데이터베이스 초기화
     init_db()
     migrate_add_exam_set()
     migrate_add_image_columns()
     migrate_add_explanation_images()
+    migrate_add_subject_id()
     print("데이터베이스가 초기화되었습니다.")

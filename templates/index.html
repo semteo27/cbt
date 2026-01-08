@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CBT 모의고사 시스템</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        // Ctrl+P 단축키로 문제관리 페이지 이동
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'p') {
+                event.preventDefault(); // 브라우저 기본 인쇄 기능 방지
+                window.location.href = "{{ url_for('admin') }}";
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -20,34 +29,46 @@
                 <p>현재 등록된 문제: <strong>{{ question_count }}개</strong></p>
             </div>
 
-            {% if exam_set_info %}
-            <div class="exam-set-section">
-                <h2>모의고사 회차 선택</h2>
-                <p class="exam-set-description">원하시는 회차를 선택하여 시험을 시작하세요.</p>
-                <div class="exam-set-grid">
-                    {% for exam_info in exam_set_info %}
-                    <a href="{{ url_for('exam', exam_set=exam_info.set_number) }}" class="exam-set-card">
-                        <div class="exam-set-number">{{ exam_info.set_number }}회</div>
-                        <div class="exam-set-count">{{ exam_info.count }}문제</div>
-                        <div class="exam-set-action">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 11l3 3L22 4"></path>
-                                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
-                            </svg>
-                            시험 시작
-                        </div>
-                    </a>
-                    {% endfor %}
+            {% if subject_info %}
+                {% for subject in subject_info %}
+                <div class="subject-section">
+                    <h2>{{ subject.name }}</h2>
+                    {% if subject.description %}
+                    <p class="subject-description">{{ subject.description }}</p>
+                    {% endif %}
+
+                    {% if subject.exam_sets %}
+                    <p class="exam-set-description">원하시는 회차를 선택하여 시험을 시작하세요.</p>
+                    <div class="exam-set-grid">
+                        {% for exam_info in subject.exam_sets %}
+                        <a href="{{ url_for('exam', subject_id=subject.id, exam_set=exam_info.set_number) }}" class="exam-set-card">
+                            <div class="exam-set-number">{{ exam_info.set_number }}회</div>
+                            <div class="exam-set-count">{{ exam_info.count }}문제</div>
+                            <div class="exam-set-action">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"></path>
+                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                                </svg>
+                                시험 시작
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>이 과목에 등록된 문제가 없습니다.</p>
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
+                {% endfor %}
             {% else %}
             <div class="empty-state">
-                <p>등록된 문제가 없습니다.</p>
-                <p>관리자 페이지에서 문제를 추가해주세요.</p>
+                <p>등록된 과목이 없습니다.</p>
+                <p>관리자 페이지에서 과목을 추가해주세요.</p>
             </div>
             {% endif %}
 
-            <div class="menu-buttons">
+            <div class="menu-buttons" style="display: none;">
                 <a href="{{ url_for('admin') }}" class="btn btn-secondary">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>

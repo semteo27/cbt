@@ -22,17 +22,27 @@ def allowed_file(filename):
 def index():
     """메인 페이지"""
     question_count = db.get_question_count()
-    exam_sets = db.get_exam_sets()
+    subjects = db.get_all_subjects()
 
-    # 각 회차별 문제 수 조회
-    exam_set_info = []
-    for exam_set in exam_sets:
-        count = db.get_question_count_by_exam_set(exam_set)
-        exam_set_info.append({'set_number': exam_set, 'count': count})
+    # 각 과목별 회차 정보
+    subject_info = []
+    for subject in subjects:
+        exam_sets = db.get_exam_sets_by_subject(subject['id'])
+        exam_set_list = []
+        for exam_set in exam_sets:
+            questions = db.get_questions_by_subject_and_exam_set(subject['id'], exam_set)
+            exam_set_list.append({'set_number': exam_set, 'count': len(questions)})
+
+        subject_info.append({
+            'id': subject['id'],
+            'name': subject['name'],
+            'description': subject['description'],
+            'exam_sets': exam_set_list
+        })
 
     return render_template('index.html',
                          question_count=question_count,
-                         exam_set_info=exam_set_info)
+                         subject_info=subject_info)
 
 @app.route('/admin')
 def admin():
@@ -380,17 +390,30 @@ def delete_explanation_image(question_id, image_index):
 @app.route('/exam')
 def exam():
     """시험 페이지"""
+    subject_id = request.args.get('subject_id', type=int)
     exam_set = request.args.get('exam_set', type=int)
 
-    if exam_set:
-        # 특정 회차의 문제만 가져오기
+    if subject_id and exam_set:
+        # 특정 과목의 특정 회차 문제 가져오기
+        subject = db.get_subject_by_id(subject_id)
+        if not subject:
+            flash('과목을 찾을 수 없습니다.', 'warning')
+            return redirect(url_for('index'))
+
+        questions = db.get_questions_by_subject_and_exam_set(subject_id, exam_set)
+        if not questions:
+            flash(f'{subject["name"]} {exam_set}회 모의고사에 등록된 문제가 없습니다.', 'warning')
+            return redirect(url_for('index'))
+        exam_title = f'{subject["name"]} 모의고사 {exam_set}회'
+    elif exam_set:
+        # 회차만 지정된 경우 (하위 호환성)
         questions = db.get_questions_by_exam_set(exam_set)
         if not questions:
             flash(f'{exam_set}회 모의고사에 등록된 문제가 없습니다.', 'warning')
             return redirect(url_for('index'))
         exam_title = f'모의고사 {exam_set}회'
     else:
-        # 회차가 지정되지 않은 경우 모든 문제
+        # 지정되지 않은 경우 모든 문제
         questions = db.get_all_questions()
         if not questions:
             flash('등록된 문제가 없습니다. 관리자 페이지에서 문제를 추가해주세요.', 'warning')
@@ -400,7 +423,8 @@ def exam():
     return render_template('exam.html',
                          questions=questions,
                          exam_title=exam_title,
-                         exam_set=exam_set)
+                         exam_set=exam_set,
+                         subject_id=subject_id)
 
 @app.route('/submit_exam', methods=['POST'])
 def submit_exam():
@@ -455,6 +479,7 @@ if __name__ == '__main__':
     db.migrate_add_exam_set()
     db.migrate_add_image_columns()
     db.migrate_add_explanation_images()
+    db.migrate_add_subject_id()
     print("CBT 시스템을 시작합니다...")
     print("브라우저에서 http://127.0.0.1:5000 을 열어주세요.")
     print("같은 네트워크의 다른 컴퓨터에서는 http://[이 컴퓨터의 IP]:5000 으로 접속하세요.")
