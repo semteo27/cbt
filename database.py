@@ -162,7 +162,7 @@ def get_max_question_id():
 def add_question(question_text, option_a, option_b, option_c, option_d,
                  correct_answer, explanation='', explanation_image='', exam_set=1,
                  question_image='', option_a_image='', option_b_image='',
-                 option_c_image='', option_d_image='', explanation_images=''):
+                 option_c_image='', option_d_image='', explanation_images='', subject_id=None):
     """새 문제 추가"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -178,12 +178,12 @@ def add_question(question_text, option_a, option_b, option_c, option_d,
         INSERT INTO questions (id, question_text, question_image, option_a, option_a_image,
                               option_b, option_b_image, option_c, option_c_image,
                               option_d, option_d_image, correct_answer, explanation,
-                              explanation_image, explanation_images, exam_set)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              explanation_image, explanation_images, exam_set, subject_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (new_id, question_text, question_image, option_a, option_a_image,
           option_b, option_b_image, option_c, option_c_image,
           option_d, option_d_image, correct_answer, explanation,
-          explanation_image, explanation_images, exam_set))
+          explanation_image, explanation_images, exam_set, subject_id))
 
     conn.commit()
     conn.close()
@@ -216,7 +216,7 @@ def get_question_by_id(question_id):
 def update_question(question_id, question_text, option_a, option_b, option_c,
                    option_d, correct_answer, explanation='', explanation_image='', exam_set=1,
                    question_image='', option_a_image='', option_b_image='',
-                   option_c_image='', option_d_image='', explanation_images=''):
+                   option_c_image='', option_d_image='', explanation_images='', subject_id=None):
     """문제 수정"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -230,12 +230,12 @@ def update_question(question_id, question_text, option_a, option_b, option_c,
         SET question_text = ?, question_image = ?, option_a = ?, option_a_image = ?,
             option_b = ?, option_b_image = ?, option_c = ?, option_c_image = ?,
             option_d = ?, option_d_image = ?, correct_answer = ?, explanation = ?,
-            explanation_image = ?, explanation_images = ?, exam_set = ?
+            explanation_image = ?, explanation_images = ?, exam_set = ?, subject_id = ?
         WHERE id = ?
     ''', (question_text, question_image, option_a, option_a_image,
           option_b, option_b_image, option_c, option_c_image,
           option_d, option_d_image, correct_answer, explanation,
-          explanation_image, explanation_images, exam_set, question_id))
+          explanation_image, explanation_images, exam_set, subject_id, question_id))
 
     conn.commit()
     conn.close()

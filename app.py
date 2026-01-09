@@ -72,6 +72,9 @@ def add_question():
         correct_answer = request.form['correct_answer']
         explanation = request.form.get('explanation', '')
         exam_set = int(request.form.get('exam_set', 1))
+        subject_id = request.form.get('subject_id', None)
+        if subject_id:
+            subject_id = int(subject_id)
 
         # 문제 이미지 처리
         question_image = ''
@@ -152,11 +155,12 @@ def add_question():
         db.add_question(question_text, option_a, option_b, option_c, option_d,
                        correct_answer, explanation, explanation_image, exam_set,
                        question_image, option_a_image, option_b_image,
-                       option_c_image, option_d_image, explanation_images)
+                       option_c_image, option_d_image, explanation_images, subject_id)
         flash('문제가 성공적으로 추가되었습니다!', 'success')
         return redirect(url_for('admin'))
 
-    return render_template('add_question.html')
+    subjects = db.get_all_subjects()
+    return render_template('add_question.html', subjects=subjects)
 
 @app.route('/admin/edit/<int:question_id>', methods=['GET', 'POST'])
 def edit_question(question_id):
@@ -170,6 +174,9 @@ def edit_question(question_id):
         correct_answer = request.form['correct_answer']
         explanation = request.form.get('explanation', '')
         exam_set = int(request.form.get('exam_set', 1))
+        subject_id = request.form.get('subject_id', None)
+        if subject_id:
+            subject_id = int(subject_id)
 
         # 기존 이미지 정보 가져오기
         existing_question = db.get_question_by_id(question_id)
@@ -282,12 +289,13 @@ def edit_question(question_id):
         db.update_question(question_id, question_text, option_a, option_b, option_c,
                           option_d, correct_answer, explanation, explanation_image, exam_set,
                           question_image, option_a_image, option_b_image,
-                          option_c_image, option_d_image, explanation_images)
+                          option_c_image, option_d_image, explanation_images, subject_id)
         flash('문제가 성공적으로 수정되었습니다!', 'success')
         return redirect(url_for('admin'))
 
     question = db.get_question_by_id(question_id)
-    return render_template('edit_question.html', question=question)
+    subjects = db.get_all_subjects()
+    return render_template('edit_question.html', question=question, subjects=subjects)
 
 @app.route('/admin/delete/<int:question_id>', methods=['POST'])
 def delete_question(question_id):

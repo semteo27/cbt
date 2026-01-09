@@ -72,6 +72,17 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="subject_id">과목 *</label>
+                    <select id="subject_id" name="subject_id" required>
+                        <option value="">과목 선택</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small>이 문제가 속할 과목을 선택하세요</small>
+                </div>
+
+                <div class="form-group">
                     <label for="exam_set">모의고사 회차 *</label>
                     <select id="exam_set" name="exam_set" required>
                         <option value="1">1회</option>
