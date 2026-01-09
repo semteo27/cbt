@@ -1,0 +1,100 @@
+<!-- Created: 2026-01-09 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과목 관리 - CBT 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>과목 관리</h1>
+            <nav>
+                <a href="{{ url_for('admin') }}" class="btn btn-small btn-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    문제 관리로
+                </a>
+            </nav>
+        </header>
+
+        <main class="admin-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="admin-actions">
+                <a href="{{ url_for('add_subject') }}" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    새 과목 추가
+                </a>
+            </div>
+
+            <div class="question-list">
+                <h2>등록된 과목 목록 (총 {{ subjects|length }}개)</h2>
+
+                {% if subjects %}
+                    <table class="question-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th>과목명</th>
+                                <th>설명</th>
+                                <th>회차 수</th>
+                                <th>문제 수</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject in subjects %}
+                            <tr>
+                                <td>{{ subject.id }}</td>
+                                <td><strong>{{ subject.name }}</strong></td>
+                                <td class="question-text">{{ subject.description or '-' }}</td>
+                                <td><span class="badge">{{ subject.exam_set_count }}회</span></td>
+                                <td><span class="badge badge-info">{{ subject.question_count }}문제</span></td>
+                                <td class="action-buttons">
+                                    <a href="{{ url_for('admin') }}?subject_id={{ subject.id }}" class="btn btn-small btn-info">문제보기</a>
+                                    <a href="{{ url_for('edit_subject', subject_id=subject.id) }}" class="btn btn-small btn-edit">수정</a>
+                                    <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" style="display: inline;" onsubmit="return confirm('정말 이 과목을 삭제하시겠습니까?');">
+                                        <button type="submit" class="btn btn-small btn-delete">삭제</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-state">
+                        <p>등록된 과목이 없습니다.</p>
+                        <p>새 과목 추가 버튼을 눌러 과목을 등록해주세요.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="bottom-actions">
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    문제 관리로
+                </a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

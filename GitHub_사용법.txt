@@ -1,0 +1,8 @@
+git add .
+git commit -m "메세지"
+git push
+
+복원
+https://github.com/semteo27/cbt/commits/main/
+원하는 날짜의 SHA복사 
+git checkout 붙여넣기 

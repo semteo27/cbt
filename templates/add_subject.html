@@ -1,0 +1,60 @@
+<!-- Created: 2026-01-09 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과목 추가 - CBT 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>새 과목 추가</h1>
+            <nav>
+                <a href="{{ url_for('subjects') }}" class="btn btn-small btn-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    뒤로가기
+                </a>
+            </nav>
+        </header>
+
+        <main class="admin-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="question-form">
+                <div class="form-group">
+                    <label for="name">과목명 <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="예: 정보처리기사">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">설명</label>
+                    <textarea id="description" name="description" rows="3" placeholder="과목에 대한 설명을 입력하세요 (선택사항)"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        과목 추가
+                    </button>
+                    <a href="{{ url_for('subjects') }}" class="btn btn-secondary">취소</a>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

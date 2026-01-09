@@ -113,10 +113,12 @@
                                 <p><strong>정답:</strong> <span id="correct-answer-{{ loop.index }}">{{ question.correct_answer }}</span></p>
                                 <p><strong>내 답:</strong> <span id="user-answer-{{ loop.index }}"></span></p>
                             </div>
-                            {% if question.explanation %}
+                            {% if question.explanation or question.explanation_images or question.explanation_image or question.explanation_video %}
                             <div class="explanation-box">
                                 <h4>해설</h4>
+                                {% if question.explanation %}
                                 <div class="explanation-text">{{ question.explanation|safe }}</div>
+                                {% endif %}
                                 {% if question.explanation_images %}
                                     {% set images = question.explanation_images.split('|') %}
                                     {% for img in images %}
@@ -126,6 +128,14 @@
                                     {% endfor %}
                                 {% elif question.explanation_image %}
                                     <img src="{{ url_for('static', filename=question.explanation_image) }}" alt="해설 이미지" class="explanation-image">
+                                {% endif %}
+                                {% if question.explanation_video %}
+                                <div class="explanation-video">
+                                    <video controls style="max-width: 100%; margin-top: 15px;">
+                                        <source src="{{ url_for('static', filename=question.explanation_video) }}" type="video/mp4">
+                                        브라우저가 동영상을 지원하지 않습니다.
+                                    </video>
+                                </div>
                                 {% endif %}
                             </div>
                             {% endif %}

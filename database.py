@@ -148,6 +148,28 @@ def migrate_add_subject_id():
     finally:
         conn.close()
 
+def migrate_add_explanation_video():
+    """기존 테이블에 explanation_video 컬럼 추가 (해설 동영상 지원)"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # 현재 컬럼 목록 확인
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        # explanation_video 컬럼이 없으면 추가
+        if 'explanation_video' not in columns:
+            cursor.execute('ALTER TABLE questions ADD COLUMN explanation_video TEXT')
+            conn.commit()
+            print("explanation_video 컬럼이 추가되었습니다.")
+        else:
+            print("explanation_video 컬럼이 이미 존재합니다.")
+    except Exception as e:
+        print(f"해설 동영상 마이그레이션 오류: {e}")
+    finally:
+        conn.close()
+
 def get_max_question_id():
     """현재 최대 문제 ID 조회"""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -162,7 +184,8 @@ def get_max_question_id():
 def add_question(question_text, option_a, option_b, option_c, option_d,
                  correct_answer, explanation='', explanation_image='', exam_set=1,
                  question_image='', option_a_image='', option_b_image='',
-                 option_c_image='', option_d_image='', explanation_images=''):
+                 option_c_image='', option_d_image='', explanation_images='', subject_id=None,
+                 explanation_video=''):
     """새 문제 추가"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -178,12 +201,14 @@ def add_question(question_text, option_a, option_b, option_c, option_d,
         INSERT INTO questions (id, question_text, question_image, option_a, option_a_image,
                               option_b, option_b_image, option_c, option_c_image,
                               option_d, option_d_image, correct_answer, explanation,
-                              explanation_image, explanation_images, exam_set)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              explanation_image, explanation_images, exam_set, subject_id,
+                              explanation_video)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (new_id, question_text, question_image, option_a, option_a_image,
           option_b, option_b_image, option_c, option_c_image,
           option_d, option_d_image, correct_answer, explanation,
-          explanation_image, explanation_images, exam_set))
+          explanation_image, explanation_images, exam_set, subject_id,
+          explanation_video))
 
     conn.commit()
     conn.close()
@@ -216,7 +241,8 @@ def get_question_by_id(question_id):
 def update_question(question_id, question_text, option_a, option_b, option_c,
                    option_d, correct_answer, explanation='', explanation_image='', exam_set=1,
                    question_image='', option_a_image='', option_b_image='',
-                   option_c_image='', option_d_image='', explanation_images=''):
+                   option_c_image='', option_d_image='', explanation_images='', subject_id=None,
+                   explanation_video=''):
     """문제 수정"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -230,12 +256,14 @@ def update_question(question_id, question_text, option_a, option_b, option_c,
         SET question_text = ?, question_image = ?, option_a = ?, option_a_image = ?,
             option_b = ?, option_b_image = ?, option_c = ?, option_c_image = ?,
             option_d = ?, option_d_image = ?, correct_answer = ?, explanation = ?,
-            explanation_image = ?, explanation_images = ?, exam_set = ?
+            explanation_image = ?, explanation_images = ?, exam_set = ?, subject_id = ?,
+            explanation_video = ?
         WHERE id = ?
     ''', (question_text, question_image, option_a, option_a_image,
           option_b, option_b_image, option_c, option_c_image,
           option_d, option_d_image, correct_answer, explanation,
-          explanation_image, explanation_images, exam_set, question_id))
+          explanation_image, explanation_images, exam_set, subject_id,
+          explanation_video, question_id))
 
     conn.commit()
     conn.close()
@@ -426,4 +454,5 @@ if __name__ == '__main__':
     migrate_add_image_columns()
     migrate_add_explanation_images()
     migrate_add_subject_id()
+    migrate_add_explanation_video()
     print("데이터베이스가 초기화되었습니다.")

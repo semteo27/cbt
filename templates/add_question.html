@@ -72,6 +72,17 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="subject_id">과목 *</label>
+                    <select id="subject_id" name="subject_id" required>
+                        <option value="">과목 선택</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}" {% if default_subject_id == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small>이 문제가 속할 과목을 선택하세요</small>
+                </div>
+
+                <div class="form-group">
                     <label for="exam_set">모의고사 회차 *</label>
                     <select id="exam_set" name="exam_set" required>
                         <option value="1">1회</option>
@@ -107,6 +118,12 @@
                     <label for="explanation_images">해설 이미지 (최대 5개)</label>
                     <input type="file" id="explanation_images" name="explanation_images" accept="image/*" multiple>
                     <small>최대 5개의 이미지를 선택할 수 있습니다 (PNG, JPG, JPEG, GIF 형식, 각 최대 16MB)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="explanation_video">해설 동영상</label>
+                    <input type="file" id="explanation_video" name="explanation_video" accept="video/*">
+                    <small>해설 동영상을 추가할 수 있습니다 (MP4, WebM, OGG, MOV, AVI 형식, 최대 100MB)</small>
                 </div>
 
                 <div class="form-actions">
