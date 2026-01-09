@@ -9,14 +9,26 @@ app.secret_key = 'your-secret-key-here'  # 세션 및 flash 메시지용
 
 # 파일 업로드 설정
 UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'webm', 'ogg', 'mov', 'avi'}
+ALLOWED_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | ALLOWED_VIDEO_EXTENSIONS
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB 제한
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB 제한 (동영상 지원)
 
 def allowed_file(filename):
     """허용된 파일 확장자 확인"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_image(filename):
+    """허용된 이미지 확장자 확인"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+def allowed_video(filename):
+    """허용된 동영상 확장자 확인"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS
 
 @app.route('/')
 def index():
@@ -47,18 +59,35 @@ def index():
 @app.route('/admin')
 def admin():
     """관리자 페이지 - 문제 목록"""
-    questions = db.get_all_questions()
-    exam_sets = db.get_exam_sets()
+    subject_id = request.args.get('subject_id', type=int)
+    subjects = db.get_all_subjects()
 
-    # 회차별로 문제 그룹화
-    questions_by_set = {}
-    for exam_set in exam_sets:
-        questions_by_set[exam_set] = db.get_questions_by_exam_set(exam_set)
+    if subject_id:
+        # 특정 과목의 문제만 조회
+        exam_sets = db.get_exam_sets_by_subject(subject_id)
+        questions_by_set = {}
+        for exam_set in exam_sets:
+            questions_by_set[exam_set] = db.get_questions_by_subject_and_exam_set(subject_id, exam_set)
+        questions = []
+        for q_list in questions_by_set.values():
+            questions.extend(q_list)
+        current_subject = db.get_subject_by_id(subject_id)
+    else:
+        # 모든 문제 조회
+        questions = db.get_all_questions()
+        exam_sets = db.get_exam_sets()
+        questions_by_set = {}
+        for exam_set in exam_sets:
+            questions_by_set[exam_set] = db.get_questions_by_exam_set(exam_set)
+        current_subject = None
 
     return render_template('admin.html',
                          questions=questions,
                          questions_by_set=questions_by_set,
-                         exam_sets=exam_sets)
+                         exam_sets=exam_sets,
+                         subjects=subjects,
+                         current_subject=current_subject,
+                         current_subject_id=subject_id)
 
 @app.route('/admin/add', methods=['GET', 'POST'])
 def add_question():
@@ -152,15 +181,30 @@ def add_question():
         if explanation_images_list:
             explanation_image = explanation_images_list[0]
 
+        # 해설 동영상 처리
+        explanation_video = ''
+        if 'explanation_video' in request.files:
+            file = request.files['explanation_video']
+            if file and file.filename and allowed_video(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                explanation_video = f'uploads/{filename}'
+
         db.add_question(question_text, option_a, option_b, option_c, option_d,
                        correct_answer, explanation, explanation_image, exam_set,
                        question_image, option_a_image, option_b_image,
-                       option_c_image, option_d_image, explanation_images, subject_id)
+                       option_c_image, option_d_image, explanation_images, subject_id,
+                       explanation_video)
         flash('문제가 성공적으로 추가되었습니다!', 'success')
+        # 추가 후 해당 과목 페이지로 돌아가기
+        if subject_id:
+            return redirect(url_for('admin', subject_id=subject_id))
         return redirect(url_for('admin'))
 
     subjects = db.get_all_subjects()
-    return render_template('add_question.html', subjects=subjects)
+    default_subject_id = request.args.get('subject_id', type=int)
+    return render_template('add_question.html', subjects=subjects, default_subject_id=default_subject_id)
 
 @app.route('/admin/edit/<int:question_id>', methods=['GET', 'POST'])
 def edit_question(question_id):
@@ -286,10 +330,26 @@ def edit_question(question_id):
         else:
             explanation_image = ''
 
+        # 해설 동영상 업데이트
+        explanation_video = existing_question['explanation_video'] or ''
+        if 'explanation_video' in request.files:
+            file = request.files['explanation_video']
+            if file and file.filename and allowed_video(file.filename):
+                # 기존 동영상 파일 삭제
+                if explanation_video:
+                    old_path = os.path.join('static', explanation_video)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                explanation_video = f'uploads/{filename}'
+
         db.update_question(question_id, question_text, option_a, option_b, option_c,
                           option_d, correct_answer, explanation, explanation_image, exam_set,
                           question_image, option_a_image, option_b_image,
-                          option_c_image, option_d_image, explanation_images, subject_id)
+                          option_c_image, option_d_image, explanation_images, subject_id,
+                          explanation_video)
         flash('문제가 성공적으로 수정되었습니다!', 'success')
         return redirect(url_for('admin'))
 
@@ -313,14 +373,15 @@ def delete_image(question_id, image_type):
         if not question:
             return jsonify({'success': False, 'message': '문제를 찾을 수 없습니다.'}), 404
 
-        # 이미지 타입별 처리
+        # 이미지/동영상 타입별 처리
         image_field_map = {
             'question': 'question_image',
             'option_a': 'option_a_image',
             'option_b': 'option_b_image',
             'option_c': 'option_c_image',
             'option_d': 'option_d_image',
-            'explanation': 'explanation_image'
+            'explanation': 'explanation_image',
+            'explanation_video': 'explanation_video'
         }
 
         if image_type not in image_field_map:
@@ -478,6 +539,98 @@ def submit_exam():
         'results': results
     })
 
+@app.route('/admin/subjects')
+def subjects():
+    """과목 관리 페이지"""
+    subjects = db.get_all_subjects()
+
+    # 각 과목별 문제 수 계산
+    subject_stats = []
+    for subject in subjects:
+        exam_sets = db.get_exam_sets_by_subject(subject['id'])
+        question_count = 0
+        for exam_set in exam_sets:
+            questions = db.get_questions_by_subject_and_exam_set(subject['id'], exam_set)
+            question_count += len(questions)
+        subject_stats.append({
+            'id': subject['id'],
+            'name': subject['name'],
+            'description': subject['description'],
+            'exam_set_count': len(exam_sets),
+            'question_count': question_count
+        })
+
+    return render_template('subjects.html', subjects=subject_stats)
+
+@app.route('/admin/subjects/add', methods=['GET', 'POST'])
+def add_subject():
+    """과목 추가"""
+    if request.method == 'POST':
+        name = request.form['name'].strip()
+        description = request.form.get('description', '').strip()
+
+        if not name:
+            flash('과목명을 입력해주세요.', 'error')
+            return redirect(url_for('add_subject'))
+
+        subject_id = db.add_subject(name, description)
+        if subject_id:
+            flash(f'"{name}" 과목이 추가되었습니다.', 'success')
+            return redirect(url_for('subjects'))
+        else:
+            flash('이미 존재하는 과목명입니다.', 'error')
+            return redirect(url_for('add_subject'))
+
+    return render_template('add_subject.html')
+
+@app.route('/admin/subjects/edit/<int:subject_id>', methods=['GET', 'POST'])
+def edit_subject(subject_id):
+    """과목 수정"""
+    subject = db.get_subject_by_id(subject_id)
+    if not subject:
+        flash('과목을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('subjects'))
+
+    if request.method == 'POST':
+        name = request.form['name'].strip()
+        description = request.form.get('description', '').strip()
+
+        if not name:
+            flash('과목명을 입력해주세요.', 'error')
+            return redirect(url_for('edit_subject', subject_id=subject_id))
+
+        # 중복 체크 (자기 자신 제외)
+        existing = db.get_subject_by_name(name)
+        if existing and existing['id'] != subject_id:
+            flash('이미 존재하는 과목명입니다.', 'error')
+            return redirect(url_for('edit_subject', subject_id=subject_id))
+
+        db.update_subject(subject_id, name, description)
+        flash(f'"{name}" 과목이 수정되었습니다.', 'success')
+        return redirect(url_for('subjects'))
+
+    return render_template('edit_subject.html', subject=subject)
+
+@app.route('/admin/subjects/delete/<int:subject_id>', methods=['POST'])
+def delete_subject(subject_id):
+    """과목 삭제"""
+    subject = db.get_subject_by_id(subject_id)
+    if not subject:
+        flash('과목을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('subjects'))
+
+    # 해당 과목에 문제가 있는지 확인
+    exam_sets = db.get_exam_sets_by_subject(subject_id)
+    has_questions = any(db.get_questions_by_subject_and_exam_set(subject_id, es) for es in exam_sets)
+
+    if has_questions:
+        flash(f'"{subject["name"]}" 과목에 문제가 있어 삭제할 수 없습니다. 먼저 문제를 삭제하거나 다른 과목으로 이동해주세요.', 'error')
+        return redirect(url_for('subjects'))
+
+    db.delete_subject(subject_id)
+    flash(f'"{subject["name"]}" 과목이 삭제되었습니다.', 'success')
+    return redirect(url_for('subjects'))
+
 if __name__ == '__main__':
     # 업로드 폴더 생성
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -488,6 +641,7 @@ if __name__ == '__main__':
     db.migrate_add_image_columns()
     db.migrate_add_explanation_images()
     db.migrate_add_subject_id()
+    db.migrate_add_explanation_video()
     print("CBT 시스템을 시작합니다...")
     print("브라우저에서 http://127.0.0.1:5000 을 열어주세요.")
     print("같은 네트워크의 다른 컴퓨터에서는 http://[이 컴퓨터의 IP]:5000 으로 접속하세요.")

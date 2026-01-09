@@ -10,7 +10,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>문제 관리</h1>
+            <h1>문제 관리{% if current_subject %} - {{ current_subject.name }}{% endif %}</h1>
             <nav>
                 <a href="{{ url_for('index') }}" class="btn btn-small btn-back">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -33,8 +33,20 @@
                 {% endif %}
             {% endwith %}
 
+            <!-- 과목 필터 -->
+            <div class="subject-filter">
+                <label for="subject-select">과목 선택:</label>
+                <select id="subject-select" onchange="filterBySubject(this.value)">
+                    <option value="">전체 과목</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}" {% if current_subject_id == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+                <a href="{{ url_for('subjects') }}" class="btn btn-small btn-secondary">과목 관리</a>
+            </div>
+
             <div class="admin-actions">
-                <a href="{{ url_for('add_question') }}" class="btn btn-primary">
+                <a href="{{ url_for('add_question') }}{% if current_subject_id %}?subject_id={{ current_subject_id }}{% endif %}" class="btn btn-primary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -99,5 +111,14 @@
             </div>
         </main>
     </div>
+    <script>
+        function filterBySubject(subjectId) {
+            if (subjectId) {
+                window.location.href = '{{ url_for("admin") }}?subject_id=' + subjectId;
+            } else {
+                window.location.href = '{{ url_for("admin") }}';
+            }
+        }
+    </script>
 </body>
 </html>

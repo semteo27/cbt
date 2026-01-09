@@ -211,6 +211,28 @@
                     <small>최대 5개까지 추가할 수 있습니다. 새 이미지는 기존 이미지에 추가됩니다. (PNG, JPG, JPEG, GIF, 각 최대 16MB)</small>
                 </div>
 
+                <div class="form-group">
+                    <label for="explanation_video">해설 동영상</label>
+                    {% if question.explanation_video %}
+                        <div class="current-video" id="explanation-video-preview">
+                            <p>현재 동영상:</p>
+                            <video controls style="max-width: 400px;">
+                                <source src="{{ url_for('static', filename=question.explanation_video) }}" type="video/mp4">
+                                브라우저가 동영상을 지원하지 않습니다.
+                            </video>
+                            <button type="button" class="btn-delete-image" onclick="deleteImage({{ question.id }}, 'explanation_video')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                </svg>
+                                동영상 삭제
+                            </button>
+                        </div>
+                    {% endif %}
+                    <input type="file" id="explanation_video" name="explanation_video" accept="video/*">
+                    <small>{% if question.explanation_video %}새 동영상을 업로드하면 기존 동영상이 교체됩니다. {% endif %}(MP4, WebM, OGG, MOV, AVI 형식, 최대 100MB)</small>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">수정 완료</button>
                     <a href="{{ url_for('admin') }}" class="btn btn-secondary">취소</a>
@@ -236,9 +258,10 @@
                 if (data.success) {
                     alert(data.message);
 
-                    // 이미지 프리뷰 요소 제거
+                    // 이미지/동영상 프리뷰 요소 제거
                     const previewId = imageType === 'question' ? 'question-image-preview' :
                                       imageType === 'explanation' ? 'explanation-image-preview' :
+                                      imageType === 'explanation_video' ? 'explanation-video-preview' :
                                       `${imageType}-image-preview`;
                     const previewElement = document.getElementById(previewId);
                     if (previewElement) {
