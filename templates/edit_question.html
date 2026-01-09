@@ -212,25 +212,39 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="explanation_video">해설 동영상</label>
-                    {% if question.explanation_video %}
-                        <div class="current-video" id="explanation-video-preview">
-                            <p>현재 동영상:</p>
-                            <video controls style="max-width: 400px;">
-                                <source src="{{ url_for('static', filename=question.explanation_video) }}" type="video/mp4">
-                                브라우저가 동영상을 지원하지 않습니다.
-                            </video>
-                            <button type="button" class="btn-delete-image" onclick="deleteImage({{ question.id }}, 'explanation_video')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                                </svg>
-                                동영상 삭제
-                            </button>
+                    <label for="explanation_videos">해설 동영상 (최대 5개)</label>
+                    {% if question.explanation_videos %}
+                        {% set videos = question.explanation_videos.split('|') %}
+                        <div class="current-videos-grid">
+                            <p>현재 동영상 (<span id="current-video-count">{{ videos|length }}</span>개 / 최대 5개):</p>
+                            {% for video in videos %}
+                                {% if video %}
+                                <div class="current-video" id="explanation-video-{{ loop.index0 }}">
+                                    <video controls style="max-width: 400px;">
+                                        <source src="{{ url_for('static', filename=video) }}" type="video/mp4">
+                                        브라우저가 동영상을 지원하지 않습니다.
+                                    </video>
+                                    <button type="button" class="btn-delete-image" onclick="deleteExplanationVideo({{ question.id }}, {{ loop.index0 }})">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                        </svg>
+                                        동영상 {{ loop.index }} 삭제
+                                    </button>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
                         </div>
+                        <script>
+                            let currentVideoCount = {{ videos|length }};
+                        </script>
+                    {% else %}
+                        <script>
+                            let currentVideoCount = 0;
+                        </script>
                     {% endif %}
-                    <input type="file" id="explanation_video" name="explanation_video" accept="video/*">
-                    <small>{% if question.explanation_video %}새 동영상을 업로드하면 기존 동영상이 교체됩니다. {% endif %}(MP4, WebM, OGG, MOV, AVI 형식, 최대 100MB)</small>
+                    <input type="file" id="explanation_videos" name="explanation_videos" accept="video/*" multiple>
+                    <small>최대 5개까지 추가할 수 있습니다. 새 동영상은 기존 동영상에 추가됩니다. (MP4, WebM, OGG, MOV, AVI, 각 최대 100MB)</small>
                 </div>
 
                 <div class="form-actions">
@@ -322,6 +336,55 @@
 
             if (totalCount > 5) {
                 alert(`해설 이미지는 최대 5개까지만 추가할 수 있습니다.\n현재: ${currentImageCount}개, 선택: ${files.length}개\n최대 ${5 - currentImageCount}개까지 선택 가능합니다.`);
+                e.target.value = ''; // 선택 취소
+            }
+        });
+
+        function deleteExplanationVideo(questionId, videoIndex) {
+            if (!confirm('해설 동영상을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            fetch(`/admin/delete_explanation_video/${questionId}/${videoIndex}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+
+                    // 동영상 프리뷰 요소 제거
+                    const previewElement = document.getElementById(`explanation-video-${videoIndex}`);
+                    if (previewElement) {
+                        previewElement.remove();
+                    }
+
+                    // 현재 동영상 개수 업데이트
+                    currentVideoCount--;
+                    const countElement = document.getElementById('current-video-count');
+                    if (countElement) {
+                        countElement.textContent = currentVideoCount;
+                    }
+                } else {
+                    alert('오류: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('동영상 삭제 중 오류가 발생했습니다.');
+            });
+        }
+
+        // 해설 동영상 파일 개수 제한 (기존 동영상 + 새 동영상 합쳐서 최대 5개)
+        document.getElementById('explanation_videos').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const totalCount = currentVideoCount + files.length;
+
+            if (totalCount > 5) {
+                alert(`해설 동영상은 최대 5개까지만 추가할 수 있습니다.\n현재: ${currentVideoCount}개, 선택: ${files.length}개\n최대 ${5 - currentVideoCount}개까지 선택 가능합니다.`);
                 e.target.value = ''; // 선택 취소
             }
         });

@@ -121,9 +121,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="explanation_video">해설 동영상</label>
-                    <input type="file" id="explanation_video" name="explanation_video" accept="video/*">
-                    <small>해설 동영상을 추가할 수 있습니다 (MP4, WebM, OGG, MOV, AVI 형식, 최대 100MB)</small>
+                    <label for="explanation_videos">해설 동영상 (최대 5개)</label>
+                    <input type="file" id="explanation_videos" name="explanation_videos" accept="video/*" multiple>
+                    <small>최대 5개의 동영상을 선택할 수 있습니다 (MP4, WebM, OGG, MOV, AVI 형식, 각 최대 100MB)</small>
                 </div>
 
                 <div class="form-actions">
@@ -140,6 +140,15 @@
             const files = e.target.files;
             if (files.length > 5) {
                 alert('해설 이미지는 최대 5개까지만 선택할 수 있습니다.');
+                e.target.value = ''; // 선택 취소
+            }
+        });
+
+        // 해설 동영상 파일 개수 제한 (최대 5개)
+        document.getElementById('explanation_videos').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 5) {
+                alert('해설 동영상은 최대 5개까지만 선택할 수 있습니다.');
                 e.target.value = ''; // 선택 취소
             }
         });

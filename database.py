@@ -170,6 +170,33 @@ def migrate_add_explanation_video():
     finally:
         conn.close()
 
+def migrate_add_explanation_videos():
+    """기존 테이블에 explanation_videos 컬럼 추가 (여러 해설 동영상 지원, 최대 5개)"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # 현재 컬럼 목록 확인
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        # explanation_videos 컬럼이 없으면 추가
+        if 'explanation_videos' not in columns:
+            cursor.execute('ALTER TABLE questions ADD COLUMN explanation_videos TEXT')
+            conn.commit()
+            print("explanation_videos 컬럼이 추가되었습니다.")
+
+            # 기존 explanation_video 데이터를 explanation_videos로 마이그레이션
+            cursor.execute("UPDATE questions SET explanation_videos = explanation_video WHERE explanation_video IS NOT NULL AND explanation_video != ''")
+            conn.commit()
+            print("기존 해설 동영상 데이터를 마이그레이션했습니다.")
+        else:
+            print("explanation_videos 컬럼이 이미 존재합니다.")
+    except Exception as e:
+        print(f"해설 동영상 마이그레이션 오류: {e}")
+    finally:
+        conn.close()
+
 def get_max_question_id():
     """현재 최대 문제 ID 조회"""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -185,7 +212,7 @@ def add_question(question_text, option_a, option_b, option_c, option_d,
                  correct_answer, explanation='', explanation_image='', exam_set=1,
                  question_image='', option_a_image='', option_b_image='',
                  option_c_image='', option_d_image='', explanation_images='', subject_id=None,
-                 explanation_video=''):
+                 explanation_video='', explanation_videos=''):
     """새 문제 추가"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -193,6 +220,10 @@ def add_question(question_text, option_a, option_b, option_c, option_d,
     # explanation_images가 제공되지 않았고 explanation_image가 있으면 사용
     if not explanation_images and explanation_image:
         explanation_images = explanation_image
+
+    # explanation_videos가 제공되지 않았고 explanation_video가 있으면 사용
+    if not explanation_videos and explanation_video:
+        explanation_videos = explanation_video
 
     # 마지막 문제 번호 다음 번호를 새 ID로 사용
     new_id = get_max_question_id() + 1
@@ -202,13 +233,13 @@ def add_question(question_text, option_a, option_b, option_c, option_d,
                               option_b, option_b_image, option_c, option_c_image,
                               option_d, option_d_image, correct_answer, explanation,
                               explanation_image, explanation_images, exam_set, subject_id,
-                              explanation_video)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              explanation_video, explanation_videos)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (new_id, question_text, question_image, option_a, option_a_image,
           option_b, option_b_image, option_c, option_c_image,
           option_d, option_d_image, correct_answer, explanation,
           explanation_image, explanation_images, exam_set, subject_id,
-          explanation_video))
+          explanation_video, explanation_videos))
 
     conn.commit()
     conn.close()
@@ -242,7 +273,7 @@ def update_question(question_id, question_text, option_a, option_b, option_c,
                    option_d, correct_answer, explanation='', explanation_image='', exam_set=1,
                    question_image='', option_a_image='', option_b_image='',
                    option_c_image='', option_d_image='', explanation_images='', subject_id=None,
-                   explanation_video=''):
+                   explanation_video='', explanation_videos=''):
     """문제 수정"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -251,19 +282,23 @@ def update_question(question_id, question_text, option_a, option_b, option_c,
     if not explanation_images and explanation_image:
         explanation_images = explanation_image
 
+    # explanation_videos가 제공되지 않았고 explanation_video가 있으면 사용
+    if not explanation_videos and explanation_video:
+        explanation_videos = explanation_video
+
     cursor.execute('''
         UPDATE questions
         SET question_text = ?, question_image = ?, option_a = ?, option_a_image = ?,
             option_b = ?, option_b_image = ?, option_c = ?, option_c_image = ?,
             option_d = ?, option_d_image = ?, correct_answer = ?, explanation = ?,
             explanation_image = ?, explanation_images = ?, exam_set = ?, subject_id = ?,
-            explanation_video = ?
+            explanation_video = ?, explanation_videos = ?
         WHERE id = ?
     ''', (question_text, question_image, option_a, option_a_image,
           option_b, option_b_image, option_c, option_c_image,
           option_d, option_d_image, correct_answer, explanation,
           explanation_image, explanation_images, exam_set, subject_id,
-          explanation_video, question_id))
+          explanation_video, explanation_videos, question_id))
 
     conn.commit()
     conn.close()
@@ -455,4 +490,5 @@ if __name__ == '__main__':
     migrate_add_explanation_images()
     migrate_add_subject_id()
     migrate_add_explanation_video()
+    migrate_add_explanation_videos()
     print("데이터베이스가 초기화되었습니다.")

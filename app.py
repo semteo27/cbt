@@ -181,21 +181,37 @@ def add_question():
         if explanation_images_list:
             explanation_image = explanation_images_list[0]
 
-        # 해설 동영상 처리
+        # 해설 동영상 처리 (여러 개 지원, 최대 5개)
         explanation_video = ''
-        if 'explanation_video' in request.files:
-            file = request.files['explanation_video']
-            if file and file.filename and allowed_video(file.filename):
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                explanation_video = f'uploads/{filename}'
+        explanation_videos_list = []
+
+        if 'explanation_videos' in request.files:
+            files = request.files.getlist('explanation_videos')
+
+            # 최대 5개 제한 검증
+            if len(files) > 5:
+                flash('해설 동영상은 최대 5개까지만 업로드할 수 있습니다.', 'error')
+                return redirect(url_for('add_question'))
+
+            for file in files:
+                if file and file.filename and allowed_video(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    explanation_videos_list.append(f'uploads/{filename}')
+
+        # 여러 동영상을 파이프(|)로 구분하여 저장
+        explanation_videos = '|'.join(explanation_videos_list) if explanation_videos_list else ''
+
+        # 하위 호환성: 첫 번째 동영상을 explanation_video로도 저장
+        if explanation_videos_list:
+            explanation_video = explanation_videos_list[0]
 
         db.add_question(question_text, option_a, option_b, option_c, option_d,
                        correct_answer, explanation, explanation_image, exam_set,
                        question_image, option_a_image, option_b_image,
                        option_c_image, option_d_image, explanation_images, subject_id,
-                       explanation_video)
+                       explanation_video, explanation_videos)
         flash('문제가 성공적으로 추가되었습니다!', 'success')
         # 추가 후 해당 과목 페이지로 돌아가기
         if subject_id:
@@ -330,26 +346,48 @@ def edit_question(question_id):
         else:
             explanation_image = ''
 
-        # 해설 동영상 업데이트
+        # 해설 동영상 업데이트 (여러 개 지원, 최대 5개)
         explanation_video = existing_question['explanation_video'] or ''
-        if 'explanation_video' in request.files:
-            file = request.files['explanation_video']
-            if file and file.filename and allowed_video(file.filename):
-                # 기존 동영상 파일 삭제
-                if explanation_video:
-                    old_path = os.path.join('static', explanation_video)
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                explanation_video = f'uploads/{filename}'
+        explanation_videos = existing_question['explanation_videos'] or ''
+        explanation_videos_list = explanation_videos.split('|') if explanation_videos else []
+        # 빈 문자열 제거
+        explanation_videos_list = [v for v in explanation_videos_list if v]
+
+        if 'explanation_videos' in request.files:
+            files = request.files.getlist('explanation_videos')
+            new_videos = []
+
+            # 최대 5개 제한 검증 (기존 동영상 + 새 동영상)
+            total_count = len(explanation_videos_list) + len([f for f in files if f and f.filename])
+            if total_count > 5:
+                flash(f'해설 동영상은 최대 5개까지만 추가할 수 있습니다. (현재: {len(explanation_videos_list)}개)', 'error')
+                return redirect(url_for('edit_question', question_id=question_id))
+
+            for file in files:
+                if file and file.filename and allowed_video(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    new_videos.append(f'uploads/{filename}')
+
+            # 새 동영상이 있으면 기존 동영상에 추가
+            if new_videos:
+                explanation_videos_list.extend(new_videos)
+
+        # 여러 동영상을 파이프(|)로 구분하여 저장
+        explanation_videos = '|'.join(explanation_videos_list) if explanation_videos_list else ''
+
+        # 하위 호환성: 첫 번째 동영상을 explanation_video로도 저장
+        if explanation_videos_list:
+            explanation_video = explanation_videos_list[0]
+        else:
+            explanation_video = ''
 
         db.update_question(question_id, question_text, option_a, option_b, option_c,
                           option_d, correct_answer, explanation, explanation_image, exam_set,
                           question_image, option_a_image, option_b_image,
                           option_c_image, option_d_image, explanation_images, subject_id,
-                          explanation_video)
+                          explanation_video, explanation_videos)
         flash('문제가 성공적으로 수정되었습니다!', 'success')
         return redirect(url_for('admin'))
 
@@ -452,6 +490,53 @@ def delete_explanation_image(question_id, image_index):
         conn.close()
 
         return jsonify({'success': True, 'message': '해설 이미지가 삭제되었습니다.'})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'오류가 발생했습니다: {str(e)}'}), 500
+
+@app.route('/admin/delete_explanation_video/<int:question_id>/<int:video_index>', methods=['POST'])
+def delete_explanation_video(question_id, video_index):
+    """해설 동영상 삭제 (특정 인덱스)"""
+    try:
+        # 문제 정보 가져오기
+        question = db.get_question_by_id(question_id)
+        if not question:
+            return jsonify({'success': False, 'message': '문제를 찾을 수 없습니다.'}), 404
+
+        # 현재 해설 동영상들 가져오기
+        explanation_videos = question['explanation_videos'] or ''
+        if not explanation_videos:
+            return jsonify({'success': False, 'message': '삭제할 동영상이 없습니다.'}), 404
+
+        videos_list = [v for v in explanation_videos.split('|') if v]
+
+        # 인덱스 유효성 검사
+        if video_index < 0 or video_index >= len(videos_list):
+            return jsonify({'success': False, 'message': '잘못된 동영상 인덱스입니다.'}), 400
+
+        # 삭제할 동영상 경로
+        video_to_delete = videos_list[video_index]
+
+        # 파일 삭제
+        file_path = os.path.join('static', video_to_delete)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # 리스트에서 제거
+        videos_list.pop(video_index)
+
+        # 업데이트된 동영상 목록을 파이프로 구분하여 저장
+        new_explanation_videos = '|'.join(videos_list) if videos_list else ''
+
+        # DB 업데이트
+        conn = db.sqlite3.connect(db.DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute('UPDATE questions SET explanation_videos = ?, explanation_video = ? WHERE id = ?',
+                      (new_explanation_videos, videos_list[0] if videos_list else '', question_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': '해설 동영상이 삭제되었습니다.'})
 
     except Exception as e:
         return jsonify({'success': False, 'message': f'오류가 발생했습니다: {str(e)}'}), 500
@@ -642,6 +727,7 @@ if __name__ == '__main__':
     db.migrate_add_explanation_images()
     db.migrate_add_subject_id()
     db.migrate_add_explanation_video()
+    db.migrate_add_explanation_videos()
     print("CBT 시스템을 시작합니다...")
     print("브라우저에서 http://127.0.0.1:5000 을 열어주세요.")
     print("같은 네트워크의 다른 컴퓨터에서는 http://[이 컴퓨터의 IP]:5000 으로 접속하세요.")

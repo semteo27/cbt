@@ -113,7 +113,7 @@
                                 <p><strong>정답:</strong> <span id="correct-answer-{{ loop.index }}">{{ question.correct_answer }}</span></p>
                                 <p><strong>내 답:</strong> <span id="user-answer-{{ loop.index }}"></span></p>
                             </div>
-                            {% if question.explanation or question.explanation_images or question.explanation_image or question.explanation_video %}
+                            {% if question.explanation or question.explanation_images or question.explanation_image or question.explanation_videos or question.explanation_video %}
                             <div class="explanation-box">
                                 <h4>해설</h4>
                                 {% if question.explanation %}
@@ -129,7 +129,19 @@
                                 {% elif question.explanation_image %}
                                     <img src="{{ url_for('static', filename=question.explanation_image) }}" alt="해설 이미지" class="explanation-image">
                                 {% endif %}
-                                {% if question.explanation_video %}
+                                {% if question.explanation_videos %}
+                                    {% set videos = question.explanation_videos.split('|') %}
+                                    {% for video in videos %}
+                                        {% if video %}
+                                        <div class="explanation-video">
+                                            <video controls style="max-width: 100%; margin-top: 15px;">
+                                                <source src="{{ url_for('static', filename=video) }}" type="video/mp4">
+                                                브라우저가 동영상을 지원하지 않습니다.
+                                            </video>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elif question.explanation_video %}
                                 <div class="explanation-video">
                                     <video controls style="max-width: 100%; margin-top: 15px;">
                                         <source src="{{ url_for('static', filename=question.explanation_video) }}" type="video/mp4">
@@ -227,6 +239,12 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- 이미지 전체화면 모달 -->
+    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+        <span class="modal-close" onclick="closeImageModal()">&times;</span>
+        <img class="modal-content" id="modalImage" alt="전체화면 이미지">
     </div>
 
     <script>
@@ -481,7 +499,42 @@
         window.onload = function() {
             updateProgress();
             updateNavigationButtons();
+            initExplanationImages();
         };
+
+        // 해설 이미지 클릭 이벤트 초기화
+        function initExplanationImages() {
+            const explanationImages = document.querySelectorAll('.explanation-image');
+            explanationImages.forEach(img => {
+                img.classList.add('clickable');
+                img.onclick = function() {
+                    openImageModal(this.src);
+                };
+            });
+        }
+
+        // 이미지 모달 열기
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.classList.add('show');
+            modalImg.src = imageSrc;
+            document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+        }
+
+        // 이미지 모달 닫기
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = ''; // 스크롤 복원
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
     </script>
 </body>
 </html>
